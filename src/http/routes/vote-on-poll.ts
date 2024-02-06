@@ -10,13 +10,34 @@ export async function voteOnPoll(app: FastifyInstance) {
     })
 
     const voteOnPollParams = z.object({
-      polld: z.string().uuid(),
+      pollId: z.string().uuid(),
     })
 
     const { pollOptionId } = voteOnPoll.parse(req.body)
-    const { polld } = voteOnPollParams.parse(req.params)
+    const { pollId } = voteOnPollParams.parse(req.params)
 
     let { sessionId } = req.cookies
+
+    if (sessionId) {
+      const userPreviousVoteOnPoll = await prisma.vote.findUnique({
+        where: {
+          sessionId_pollId: {
+            sessionId,
+            pollId,
+          }
+        }
+      })
+
+      if (userPreviousVoteOnPoll && userPreviousVoteOnPoll.pollOptionId !== pollOptionId) {
+        await prisma.vote.delete({
+          where: {
+            id: userPreviousVoteOnPoll.id
+          }
+        })
+      } else if (userPreviousVoteOnPoll) {
+        return res.status(400).send({ message: "User already voted on this poll" })
+      }
+    }
 
     if (!sessionId) {
       sessionId = randomUUID()
@@ -29,7 +50,13 @@ export async function voteOnPoll(app: FastifyInstance) {
       })
     }
 
-
+    await prisma.vote.create({
+      data: {
+        sessionId,
+        pollId,
+        pollOptionId
+      }
+    })
 
     return res.status(201).send()
   })

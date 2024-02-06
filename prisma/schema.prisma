@@ -16,7 +16,7 @@ model Poll {
   createdAt DateTime     @default(now())
   uptadetAt DateTime     @default(now())
   options   PollOption[]
-  Vote      Vote[]
+  votes     Vote[]
 }
 
 model PollOption {
@@ -24,7 +24,7 @@ model PollOption {
   title  String
   poll   Poll   @relation(fields: [pollId], references: [id])
   pollId String
-  Vote   Vote[]
+  votes  Vote[]
 }
 
 model Vote {
